@@ -16,7 +16,7 @@ receptive_field(model, input_size=(channels, H, W))
 Or
 ```python
 from torch_receptive_field import receptive_field
-dict = receptive_field(model, input_size=(channels, H, W))
+dict = receptive_field(model, input_size=(channels, Seq_Len))
 receptive_field_for_unit(receptive_field_dict, "2", (2,2))
 ```
 
@@ -24,43 +24,48 @@ receptive_field_for_unit(receptive_field_dict, "2", (2,2))
 ```python
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch_receptive_field import receptive_field
+from torch_receptive_field import receptive_field, receptive_field_for_unit
+
 
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        self.bn = nn.BatchNorm2d(64)
+        self.conv = nn.Sequential(
+            nn.Conv1d(3, 6, 3, dilation=1),
+            nn.ReLU(),
+            nn.Conv1d(6, 6, 3, dilation=2),
+            nn.ReLU(),
+            nn.Conv1d(6, 6, 3, dilation=3),
+        )
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
     def forward(self, x):
         y = self.conv(x)
-        y = self.bn(y)
         y = self.relu(y)
-        y = self.maxpool(y)
         return y
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # PyTorch v0.4.0
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   # PyTorch v0.4.0
 model = Net().to(device)
 
-receptive_field_dict = receptive_field(model, (3, 256, 256))
-receptive_field_for_unit(receptive_field_dict, "2", (2,2))
+receptive_field_dict = receptive_field(model, (3, 100))
+receptive_field_for_unit(receptive_field_dict, "2", (1, 1))
+
 ```
 ```
 ------------------------------------------------------------------------------
-        Layer (type)    map size      start       jump receptive_field
+        Layer (type)    map size      start       jump receptive_field 
 ==============================================================================
-        0             [256, 256]        0.5        1.0             1.0
-        1             [128, 128]        0.5        2.0             7.0
-        2             [128, 128]        0.5        2.0             7.0
-        3             [128, 128]        0.5        2.0             7.0
-        4               [64, 64]        0.5        4.0            11.0
+        0               [3, 100]        0.5        1.0             1.0 
+        1                [6, 98]        1.5        1.0             3.0 
+        2                [6, 98]        1.5        1.0             3.0 
+        3                [6, 94]        2.5        1.0             7.0 
+        4                [6, 94]        2.5        1.0             7.0 
+        5                [6, 88]        3.5        1.0            13.0 
+        6                [6, 88]        3.5        1.0            13.0 
 ==============================================================================
-Receptive field size for layer 2, unit_position (1, 1),  is
- [(0, 6.0), (0, 6.0)]
+Receptive field size for layer 2, unit_position (1, 1),  is 
+ [(1.0, 3), (1.0, 4.0)]
 ```
 
 ## More
