@@ -25,4 +25,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   # PyTorc
 model = Net().to(device)
 
 receptive_field_dict = receptive_field(model, (3, 100))
-receptive_field_for_unit(receptive_field_dict, "2", (1, 1))
+# receptive_field_for_unit(receptive_field_dict, "2", (1, 1))
+print(receptive_field_dict["1"]["r"])
+
